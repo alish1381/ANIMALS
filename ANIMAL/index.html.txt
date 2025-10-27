@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Farcaster Animal NFT</title>
+
+  <!-- Farcaster Frame Metadata -->
+  <meta property="fc:frame" content="vNext" />
+  <meta property="og:title" content="Farcaster Animal NFT" />
+  <meta property="og:description" content="Mint your random Farcaster Animal NFT on Base" />
+  <meta property="og:image" content="https://your-domain.example/preview.png" />
+  <meta name="theme-color" content="#8a63d2" />
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #8a63d2 0%, #5b47a8 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #1a1a1a;
+    }
+    .card {
+      background: rgba(255,255,255,0.95);
+      border-radius: 24px;
+      padding: 40px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      width: 380px;
+    }
+    h1 { font-size: 28px; margin-bottom: 10px; }
+    p { color: #666; margin-bottom: 20px; }
+    .nft-image {
+      width: 100%;
+      aspect-ratio: 1;
+      background: linear-gradient(135deg, #f0e6ff 0%, #e6d9ff 100%);
+      border-radius: 20px;
+      font-size: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 25px;
+      box-shadow: 0 10px 30px rgba(138, 99, 210, 0.3);
+    }
+    button {
+      padding: 15px;
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .mint-btn {
+      background: linear-gradient(135deg, #8a63d2, #5b47a8);
+      color: white;
+    }
+    .mint-btn:hover { box-shadow: 0 8px 25px rgba(138,99,210,0.4); }
+    .status {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 14px;
+      display: none;
+    }
+    .status.success { background: #d4edda; color: #155724; display: block; }
+    .status.error { background: #f8d7da; color: #721c24; display: block; }
+    .status.loading { background: #e6d9ff; color: #5b47a8; display: block; }
+    .share-btn {
+      margin-top: 15px;
+      background: linear-gradient(135deg, #5b47a8, #8a63d2);
+      color: #fff;
+      display: none;
+    }
+    .share-btn:hover { opacity: 0.9; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Farcaster Animals</h1>
+    <p>Mint your random animal NFT</p>
+    <div class="nft-image" id="animal">🦊</div>
+    <button class="mint-btn" onclick="mintNFT()">Mint Now</button>
+    <button class="share-btn" id="shareBtn">Share on Farcaster</button>
+    <div class="status" id="status"></div>
+  </div>
+
+  <script type="module">
+    import { ethers } from "https://cdn.jsdelivr.net/npm/ethers@6.8.1/dist/ethers.min.js";
+
+    const CONTRACT_ADDRESS = "0x8B5d4CC4B3A4be7b73cd540812D103879d21DF1b";
+    const ABI = [
+      "function mintRandom() external payable",
+      "function totalSupply() public view returns (uint256)"
+    ];
+
+    const characters = ['🦊','🐱','🐼','🐨','🦁','🐯','🐸','🐵','🦄','🐲','🐶','🐰','🦓','🐹','🐢'];
+    const animalEl = document.getElementById('animal');
+    const statusEl = document.getElementById('status');
+    const shareBtn = document.getElementById('shareBtn');
+
+    function showStatus(type, msg) {
+      statusEl.className = "status " + type;
+      statusEl.textContent = msg;
+    }
+
+    async function mintNFT() {
+      try {
+        showStatus('loading', 'Connecting wallet...');
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        const signer = await provider.getSigner();
+        const network = await provider.getNetwork();
+        if (network.chainId !== 8453n) {
+          throw new Error("Please switch to Base network.");
+        }
+
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+        const value = ethers.parseEther("0.0005");
+
+        showStatus('loading', 'Minting your NFT...');
+        const tx = await contract.mintRandom({ value });
+        await tx.wait();
+
+        const randomAnimal = characters[Math.floor(Math.random() * characters.length)];
+        animalEl.textContent = randomAnimal;
+        showStatus('success', '🎉 Successfully minted your NFT!');
+        shareBtn.style.display = "block";
+
+        // فعال‌سازی دکمه Share
+        shareBtn.onclick = () => {
+          const shareUrl = window.location.href;
+          const castText = `I just minted a ${randomAnimal} on Farcaster Animals! 🐾 Check it out: ${shareUrl}`;
+          const warpcastUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}`;
+          window.open(warpcastUrl, "_blank");
+        };
+      } catch (err) {
+        console.error(err);
+        showStatus('error', err.message || 'Mint failed');
+      }
+    }
+  </script>
+</body>
+</html>
